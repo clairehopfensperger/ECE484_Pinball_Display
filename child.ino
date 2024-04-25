@@ -1,5 +1,5 @@
 // ECE 484
-// Pinball Field - SPI Parent (Display - SPI Child)
+// Pinball Display - SPI Child (Field - SPI Parent)
 // Claire Hopfensperger
 
 //-----------------------------------------------------------
@@ -25,6 +25,7 @@ volatile byte ChildSend = 0;
 
 // Game logic vars
 int level = 0;
+int balls = 0;
 int currentPoints = 0;
 int oldPoints = 0;
 int goalPoints = 0;
@@ -36,9 +37,9 @@ int goalPoints = 0;
 // Game logic vars -------------
 
 // goal points to pass level
-#define pointsG 50
-#define pointsY 200
-#define pointsO 500
+#define lvl1points 15
+#define lvl2points 60
+#define lvl3points 150
 
 //-----------------------------------------------------------
 // Setup
@@ -57,15 +58,28 @@ void setup()
   SPI.attachInterrupt();  // turn ON interrupt for SPI com. 
                           // If data is received from master, the interrupt routine is called and the received value is taken from SPDR (SPI data reg)
 
+  level = 1;
+  balls = 3;
+  goalPoints = lvl1points;
+  currentPoints = goalPoints;
+  oldPoints = 0;
+  
   lcd.init();                           // initialize the lcd 
   lcd.backlight();
   lcd.print("Ready to go!");
   delay(500);
   lcd.clear();
 
-  lcd.print("Points: ");
+  lcd.setCursor(0, 0);
+  lcd.print("Goal: ");
   lcd.print(currentPoints);
 
+  lcd.setCursor(0, 1);
+  lcd.print("LVL: ");
+  lcd.print(level);
+
+  lcd.print(" Balls: ");
+  lcd.print(balls);
 }
 
 //-----------------------------------------------------------
@@ -87,108 +101,96 @@ ISR (SPI_STC_vect)
 
 void loop()
 {
-  // set child LED to ON or OFF depending on ChildReceive value
-  if (received)
+  
+  if (balls > 0)
   {
-    oldPoints = currentPoints;
-    currentPoints += ChildReceive;
-    
-    // turn master LED ON or OFF based on Masterreceive value
-    if(currentPoints != oldPoints)
+    // set child LED to ON or OFF depending on ChildReceive value
+    if (received)
     {
+      oldPoints = currentPoints;
+      currentPoints -= ChildReceive;
+      
+      // turn master LED ON or OFF based on Masterreceive value
+      if(currentPoints != oldPoints)
+      {
+        balls--;
+        
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Goal: ");
+        lcd.print(currentPoints);
+      
+        lcd.setCursor(0, 1);
+        lcd.print("LVL: ");
+        lcd.print(level);
+      
+        lcd.print(" Balls: ");
+        lcd.print(balls);
+
+
+        Serial.print("Goal: ");
+        Serial.println(currentPoints);
+        Serial.print("LVL: ");
+        Serial.println(level);
+        Serial.print("Balls: ");
+        Serial.println(balls);
+        Serial.println();
+      }
+      
+      ChildSend = 0;
+      SPDR = ChildSend;  // send x to parent vis SPDR
+  
+      received = false;
+      delay(100);
+    }
+  }
+  
+  else  // balls == 0
+  {
+    
+    if (currentPoints <= 0)  // Player reached goal points
+    {
+      balls = 3;
+
+      if (level == 1)
+      {
+        goalPoints = lvl2points;
+      }
+      else if (level == 2)
+      {
+        goalPoints = lvl3points;
+      }
+      else
+      {
+        goalPoints += 100;
+      }
+
+      currentPoints = goalPoints;
+
+      Serial.print("goalPoints: ");
+      Serial.println(goalPoints);
+      Serial.println();
+      
+      level++;
+
       lcd.clear();
-      lcd.print("Points: ");
+      lcd.setCursor(0, 0);
+      lcd.print("Goal: ");
       lcd.print(currentPoints);
+    
+      lcd.setCursor(0, 1);
+      lcd.print("LVL: ");
+      lcd.print(level);
+    
+      lcd.print(" Balls: ");
+      lcd.print(balls);
     }
     
-    ChildSend = 0;
-    SPDR = ChildSend;  // send x to parent vis SPDR
-
-    received = false;
-    delay(100);
+    else
+    {
+      lcd.clear();
+      lcd.print("You lose!");
+      delay(5000);
+    }
   }
 }
-
-
-
-//--------------------------------------------------------
-// Working SPI test code
-//--------------------------------------------------------
-
-//#include<SPI.h>
-//
-//// Pin declarations
-//const int ipbutton = 7;
-//const int LED = 2;
-//
-//// Variable declarations
-//int buttonvalue = 0;
-//int x = 0;
-//volatile bool received = false;
-//volatile byte ChildReceive = 0;
-//volatile byte ChildSend = 0;
-//
-//void setup()
-//{
-//  // Start serial com at Baud Rate 115200
-//  Serial.begin(115200);
-//  Serial.println("Child Starting");
-//
-//  // Attach button and LED pins
-//  pinMode(ipbutton, INPUT);                
-//  pinMode(LED, OUTPUT);
-//
-//  // SPI stuff
-//  pinMode(MISO, OUTPUT);  // sets MISO as output (enable send data to parent in)
-//  SPCR |= _BV(SPE);  // turn on SPI in child mode by using SPI control reg
-//  received = false;
-//  SPI.attachInterrupt();  // turn ON interrupt for SPI com. 
-//                          // If data is received from master, the interrupt routine is called and the received value is taken from SPDR (SPI data reg)
-//}
-//
-///*
-// * Value from parent is taken from SPDR and stored in ChildReceive var.
-// */
-//ISR (SPI_STC_vect)
-//{
-//  ChildReceive = SPDR;                  
-//  received = true;                       
-//}
-//
-//void loop()
-//{
-//  // set child LED to ON or OFF depending on ChildReceive value
-//  if (received)
-//  {
-//    if (ChildReceive == 1)
-//    {
-//      digitalWrite(LED, HIGH); //Sets pin 7 as HIGH LED ON
-//      Serial.println("Child LED ON");
-//    }
-//    else
-//    {
-//      digitalWrite(LED, LOW);     //Sets pin 7 as LOW LED OFF
-//      Serial.println("Child LED OFF");
-//    }
-//
-//    // read status of child button and store value in ChildSend to send to parent arduino via SPDR
-//    buttonvalue = digitalRead(ipbutton); 
-//    Serial.print("Button: ");
-//    Serial.println(buttonvalue);
-//    
-//    if (buttonvalue == HIGH)              
-//    {
-//      x = 1;
-//    }
-//    else
-//    {
-//      x = 0;
-//    }
-//    
-//    ChildSend = x;
-//    SPDR = ChildSend;  // send x to parent vis SPDR
-//
-//    received = false;
-//    delay(100);
-//  }
-//}
