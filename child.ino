@@ -18,6 +18,12 @@ LiquidCrystal_I2C lcd(0x27,16,2);  // set the LCD address to 0x27 for a 16 chars
 // Pin/var delcarations
 //-----------------------------------------------------------
 
+// Pin declarations
+const int buttonReset = 2;
+
+// Button vars (HIGH or LOW)
+int buttonResetVal = 0;
+
 // SPI child vars
 volatile bool received = false;
 volatile byte ChildReceive = 0;
@@ -58,16 +64,40 @@ void setup()
   SPI.attachInterrupt();  // turn ON interrupt for SPI com. 
                           // If data is received from master, the interrupt routine is called and the received value is taken from SPDR (SPI data reg)
 
+  lcd.init();             // initialize the lcd 
+  lcd.backlight();
+  resetGame();
+}
+
+//-----------------------------------------------------------
+// Helper functions
+//-----------------------------------------------------------
+
+/*
+ * Value from parent is taken from SPDR and stored in ChildReceive var.
+ */
+ISR(SPI_STC_vect)
+{
+  ChildReceive = SPDR;                  
+  received = true;                       
+}
+
+/*
+ * Resets LCD and game variables
+ */
+void resetGame()
+{
   level = 1;
   balls = 3;
   goalPoints = lvl1points;
   currentPoints = goalPoints;
   oldPoints = 0;
-  
-  lcd.init();                           // initialize the lcd 
-  lcd.backlight();
-  lcd.print("Ready to go!");
-  delay(500);
+
+  lcd.clear();
+  lcd.print("Welcome to");
+  lcd.setCursor(0, 1);
+  lcd.print("Barbie Pinball!");
+  delay(1000);
   lcd.clear();
 
   lcd.setCursor(0, 0);
@@ -83,24 +113,13 @@ void setup()
 }
 
 //-----------------------------------------------------------
-// Helper functions
-//-----------------------------------------------------------
-
-/*
- * Value from parent is taken from SPDR and stored in ChildReceive var.
- */
-ISR (SPI_STC_vect)
-{
-  ChildReceive = SPDR;                  
-  received = true;                       
-}
-
-//-----------------------------------------------------------
 // Main loop
 //-----------------------------------------------------------
 
 void loop()
 {
+  
+  buttonResetVal = digitalRead(buttonReset);
   
   if (balls > 0)
   {
@@ -186,11 +205,17 @@ void loop()
       lcd.print(balls);
     }
     
-    else
+    else  // Player loses, game over
     {
       lcd.clear();
       lcd.print("You lose!");
-      delay(5000);
+      delay(1000);
+
+      // Player can reset game by holding down "reset" button until screen updates
+      if (buttonResetVal == HIGH)
+      {
+        resetGame();
+      }
     }
   }
 }
