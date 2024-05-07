@@ -16,24 +16,17 @@
 // Pin/var delcarations
 //-----------------------------------------------------------
 
-//// Pin declarations
-//const int buttonG = 5;
-//const int buttonY = 6;
-//const int buttonO = 7;
-
 // IR sensor
 const int sense1 = 2;
 const int sense2 = 3;
 const int sense3 = 4;
+const int sense4 = 5;  // 
 
 //// Button vars (HIGH or LOW)
-//int buttonGValue = 0;
-//int buttonYValue = 0;
-//int buttonOValue = 0;
-
 int sense1Val = 0;
 int sense2Val = 0;
 int sense3Val = 0;
+int sense4Val = 0;
 
 // SPI Parent vars
 byte ParentReceive = 0;
@@ -45,6 +38,12 @@ int points = 0;
 // Servo stuff
 Servo myservo; 
 int pos = 0; 
+int direct = 0;
+
+// Photoresistor & LED
+const int photoRes = A3;
+double photoVal = 0;
+const int ledPin = 6;
 
 //-----------------------------------------------------------
 // Define statements (other)
@@ -56,6 +55,8 @@ int pos = 0;
 #define pointsL 5
 #define pointsM 20
 #define pointsH 50
+#define points0 1
+#define pointsPhoto 10
 
 //-----------------------------------------------------------
 // Setup
@@ -76,40 +77,19 @@ void setup()
   pinMode(sense1, INPUT);
   pinMode(sense2, INPUT);
   pinMode(sense3, INPUT);
+  pinMode(sense4, INPUT);
 
   // Attach servo
   myservo.attach(9);  // attaches the servo on pin 9 to the servo object
+
+  // Photoresistor & LED
+  pinMode(ledPin, OUTPUT);
 }
 
 //-----------------------------------------------------------
 // Helper functions
 //-----------------------------------------------------------
 
-///*
-// * Debounces button and doesn't read held-down button as multiple presses
-// */
-//int buttonDebounce(int button_press)
-//{
-//  int button_on;
-//  
-//  if (button_press == HIGH)
-//  {
-//    delay(150);
-//    if(button_press == LOW)
-//    {
-//      button_on = 1;
-//    }
-//    else
-//    {
-//      button_on = 0;
-//    }
-//  }
-//  else
-//  {
-//    button_on = 0;
-//  }
-//  return button_on;
-//}
 
 //-----------------------------------------------------------
 // Main loop
@@ -121,6 +101,11 @@ void loop()
   sense1Val = digitalRead(sense1);
   sense2Val = digitalRead(sense2);
   sense3Val = digitalRead(sense3);
+  sense4Val = digitalRead(sense4);
+
+  // read status of photoresistor
+  photoVal = analogRead(photoRes);
+  Serial.println(photoVal);
 
   if (sense1Val == LOW)
   {
@@ -140,9 +125,26 @@ void loop()
     //Serial.println(points);
     delay(200);
   }
+  else if (sense4Val == LOW)
+  {
+    points = points0;
+    //Serial.println(points);
+    delay(200);
+  }
+  else if (photoVal < 130) {
+    points = pointsPhoto;
+    digitalWrite(ledPin, HIGH);
+    Serial.println(points);
+    Serial.println("LED on");
+    Serial.println();
+    delay(200);
+  }
   else
   {
     points = 0;
+    digitalWrite(ledPin, LOW);
+    Serial.println("LED off");
+    //Serial.println();
   }
 
   Serial.println(points);
@@ -155,6 +157,37 @@ void loop()
   // and also receive value from child that will be stored in ParentReceive var
   ParentSend = points;
   ParentReceive = SPI.transfer(ParentSend);
+
+  // Move servo motor
+  if (pos == 180)
+  {
+    direct = 1;
+    pos -= 2;
+    myservo.write(pos);
+    delay(15);
+  }
+  else if (pos == 0)
+  {
+    direct = 0;
+    pos += 2;
+    myservo.write(pos);
+    delay(15);
+  }
+  else if (direct == 0)
+  {
+    pos += 2;
+    myservo.write(pos);
+    delay(15);
+  }
+  else  // direct == 1
+  {
+    pos -= 2;
+    myservo.write(pos);
+    delay(15);
+  }
+
+  Serial.println(pos);
+  Serial.println();
 
   //delay(200);
 //
