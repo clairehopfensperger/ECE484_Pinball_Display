@@ -47,6 +47,9 @@ int goalPoints = 0;
 #define lvl2points 60
 #define lvl3points 150
 
+// goal points
+#define pointsPhoto 10
+
 //-----------------------------------------------------------
 // Setup
 //-----------------------------------------------------------
@@ -121,7 +124,7 @@ void loop()
   
   buttonResetVal = digitalRead(buttonReset);
   
-  if (balls > 0)
+  if (balls > 0 && currentPoints > 0)
   {
     // set child LED to ON or OFF depending on ChildReceive value
     if (received)
@@ -132,7 +135,10 @@ void loop()
       // turn master LED ON or OFF based on Masterreceive value
       if(currentPoints != oldPoints)
       {
-        balls--;
+        if (ChildReceive != pointsPhoto)
+        {
+          balls--;
+        }
         
         lcd.clear();
         lcd.setCursor(0, 0);
@@ -164,7 +170,7 @@ void loop()
     }
   }
   
-  else  // balls == 0
+  else  // balls == 0 || currentPoints <= 0
   {
     
     if (currentPoints <= 0)  // Player reached goal points
@@ -209,13 +215,13 @@ void loop()
     {
       lcd.clear();
       lcd.print("You lose!");
-      delay(1000);
-
-      // Player can reset game by holding down "reset" button until screen updates
-      if (buttonResetVal == HIGH)
-      {
-        resetGame();
-      }
+      delay(5000);
+//
+//      // Player can reset game by holding down "reset" button until screen updates
+//      if (buttonResetVal == HIGH)
+//      {
+//        resetGame();
+//      }
     }
   }
 }
