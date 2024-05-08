@@ -36,6 +36,13 @@ int currentPoints = 0;
 int oldPoints = 0;
 int goalPoints = 0;
 
+// time counter vars
+int levelTime = 0;            // Time in seconds for each level
+unsigned long startTime = 0;  // Start time for the current level
+unsigned long currentTime = 0;
+unsigned long elapsedTime = 0;
+unsigned long oldElapsedTime = 0;
+
 //-----------------------------------------------------------
 // Define statements (other)
 //-----------------------------------------------------------
@@ -44,8 +51,8 @@ int goalPoints = 0;
 
 // goal points to pass level
 #define lvl1points 15
-#define lvl2points 60
-#define lvl3points 150
+#define lvl2points 30
+#define lvl3points 50
 
 // goal points
 #define pointsPhoto 10
@@ -62,7 +69,7 @@ void setup()
 
   // SPI stuff
   pinMode(MISO, OUTPUT);  // sets MISO as output (enable send data to parent in)
-  SPCR |= _BV(SPE);  // turn on SPI in child mode by using SPI control reg
+  SPCR |= _BV(SPE);       // turn on SPI in child mode by using SPI control reg
   received = false;
   SPI.attachInterrupt();  // turn ON interrupt for SPI com. 
                           // If data is received from master, the interrupt routine is called and the received value is taken from SPDR (SPI data reg)
@@ -95,7 +102,14 @@ void resetGame()
   goalPoints = lvl1points;
   currentPoints = goalPoints;
   oldPoints = 0;
+  
+  // Timer stuff
+  levelTime = 60;       // Set initial time for level 1
+  startTime = millis(); // Start the timer
+  elapsedTime = levelTime;
+  oldElapsedTime = levelTime;
 
+  // Reset LCD
   lcd.clear();
   lcd.print("Welcome to");
   lcd.setCursor(0, 1);
@@ -111,8 +125,8 @@ void resetGame()
   lcd.print("LVL: ");
   lcd.print(level);
 
-  lcd.print(" Balls: ");
-  lcd.print(balls);
+  lcd.print(" Time: ");
+  lcd.print(levelTime);
 }
 
 //-----------------------------------------------------------
@@ -123,8 +137,29 @@ void loop()
 {
   
   buttonResetVal = digitalRead(buttonReset);
+
+  // Keep track of time
+  oldElapsedTime = elapsedTime;
   
-  if (balls > 0 && currentPoints > 0)
+  currentTime = millis();
+  elapsedTime = (currentTime - startTime) / 1000;  // Convert milliseconds to seconds
+
+  if (elapsedTime == oldElapsedTime + 1)
+  {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Goal: ");
+    lcd.print(currentPoints);
+    
+    lcd.setCursor(0, 1);
+    lcd.print("LVL: ");
+    lcd.print(level);
+  
+    lcd.print(" Time: ");
+    lcd.print(levelTime - elapsedTime);
+  }
+
+  if (elapsedTime < levelTime && currentPoints > 0)
   {
     // set child LED to ON or OFF depending on ChildReceive value
     if (received)
@@ -135,31 +170,22 @@ void loop()
       // turn master LED ON or OFF based on Masterreceive value
       if(currentPoints != oldPoints)
       {
-        if (ChildReceive != pointsPhoto)
-        {
-          balls--;
-        }
+//        if (ChildReceive != pointsPhoto)
+//        {
+//          balls--;
+//        }
         
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Goal: ");
         lcd.print(currentPoints);
-      
+        
         lcd.setCursor(0, 1);
         lcd.print("LVL: ");
         lcd.print(level);
       
-        lcd.print(" Balls: ");
-        lcd.print(balls);
-
-
-        Serial.print("Goal: ");
-        Serial.println(currentPoints);
-        Serial.print("LVL: ");
-        Serial.println(level);
-        Serial.print("Balls: ");
-        Serial.println(balls);
-        Serial.println();
+        lcd.print(" Time: ");
+        lcd.print(levelTime - elapsedTime);
       }
       
       ChildSend = 0;
@@ -170,34 +196,38 @@ void loop()
     }
   }
   
-  else  // balls == 0 || currentPoints <= 0
+  else  // if (elapsedTime >= levelTime || currentPoints <= 0)
   {
     
     if (currentPoints <= 0)  // Player reached goal points
     {
-      balls = 3;
 
       if (level == 1)
       {
         goalPoints = lvl2points;
+        levelTime -= 15;
       }
       else if (level == 2)
       {
         goalPoints = lvl3points;
+        levelTime -= 15;
+      }
+      else if (levelTime >= 5)
+      {
+        goalPoints += 10;
+        levelTime -= 5;
       }
       else
       {
-        goalPoints += 100;
+        goalPoints += 10;
       }
 
       currentPoints = goalPoints;
-
-      Serial.print("goalPoints: ");
-      Serial.println(goalPoints);
-      Serial.println();
-      
       level++;
 
+      // reset time?
+      elapsedTime = 0;
+  
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Goal: ");
@@ -207,8 +237,8 @@ void loop()
       lcd.print("LVL: ");
       lcd.print(level);
     
-      lcd.print(" Balls: ");
-      lcd.print(balls);
+      lcd.print(" Time: ");
+      lcd.print(levelTime - elapsedTime);
     }
     
     else  // Player loses, game over
