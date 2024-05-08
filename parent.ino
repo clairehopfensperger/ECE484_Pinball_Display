@@ -20,13 +20,15 @@
 const int sense1 = 2;
 const int sense2 = 3;
 const int sense3 = 4;
-const int sense4 = 5;  // 
+const int sense4 = 5;  // bottom right
+const int sense5 = 6;  // bottom left
 
 //// Button vars (HIGH or LOW)
 int sense1Val = 0;
 int sense2Val = 0;
 int sense3Val = 0;
 int sense4Val = 0;
+int sense5Val = 0;
 
 // SPI Parent vars
 byte ParentReceive = 0;
@@ -43,7 +45,7 @@ int direct = 0;
 // Photoresistor & LED
 const int photoRes = A3;
 double photoVal = 0;
-const int ledPin = 6;
+const int ledPin = 7;
 
 //-----------------------------------------------------------
 // Define statements (other)
@@ -78,6 +80,7 @@ void setup()
   pinMode(sense2, INPUT);
   pinMode(sense3, INPUT);
   pinMode(sense4, INPUT);
+  pinMode(sense5, INPUT);
 
   // Attach servo
   myservo.attach(9);  // attaches the servo on pin 9 to the servo object
@@ -102,10 +105,11 @@ void loop()
   sense2Val = digitalRead(sense2);
   sense3Val = digitalRead(sense3);
   sense4Val = digitalRead(sense4);
+  sense5Val = digitalRead(sense5);
 
   // read status of photoresistor
   photoVal = analogRead(photoRes);
-  Serial.println(photoVal);
+  //Serial.println(photoVal);
 
   if (sense1Val == LOW)
   {
@@ -125,29 +129,29 @@ void loop()
     //Serial.println(points);
     delay(200);
   }
-  else if (sense4Val == LOW)
-  {
-    points = points0;
-    //Serial.println(points);
-    delay(200);
-  }
+//  else if (sense4Val == LOW) // || sense5Val == LOW)
+//  {
+//    points = points0;
+//    //Serial.println(points);
+//    delay(200);
+//  }
   else if (photoVal < 130) {
     points = pointsPhoto;
     digitalWrite(ledPin, HIGH);
-    Serial.println(points);
-    Serial.println("LED on");
-    Serial.println();
+    //Serial.println(points);
+    //Serial.println("LED on");
+    //Serial.println();
     delay(200);
   }
   else
   {
     points = 0;
     digitalWrite(ledPin, LOW);
-    Serial.println("LED off");
+    //Serial.println("LED off");
     //Serial.println();
   }
 
-  Serial.println(points);
+  //Serial.println(points);
   
   // Before sending X to the child,
   // we need to set SS to LOW to begin the transfer from parent to child.
@@ -157,6 +161,9 @@ void loop()
   // and also receive value from child that will be stored in ParentReceive var
   ParentSend = points;
   ParentReceive = SPI.transfer(ParentSend);
+
+  Serial.println(ParentSend);
+  //Serial.println();
 
   // Move servo motor
   if (pos == 180)
@@ -186,8 +193,8 @@ void loop()
     delay(15);
   }
 
-  Serial.println(pos);
-  Serial.println();
+//  Serial.println(pos);
+//  Serial.println();
 
   //delay(200);
 //
