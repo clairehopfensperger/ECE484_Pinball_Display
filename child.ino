@@ -108,14 +108,22 @@ void resetGame()
   startTime = millis(); // Start the timer
   elapsedTime = levelTime;
   oldElapsedTime = levelTime;
-
+  
   // Reset LCD
   lcd.clear();
   lcd.print("Welcome to");
   lcd.setCursor(0, 1);
   lcd.print("Barbie Pinball!");
-  delay(1000);
+  delay(2000);
   lcd.clear();
+
+  // Level announcement
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("LEVEL ");
+  lcd.print(level);
+  lcd.print("!!");
+  delay(2000);
 
   lcd.setCursor(0, 0);
   lcd.print("Goal: ");
@@ -169,12 +177,8 @@ void loop()
       
       // turn master LED ON or OFF based on Masterreceive value
       if(currentPoints != oldPoints)
-      {
-//        if (ChildReceive != pointsPhoto)
-//        {
-//          balls--;
-//        }
-        
+      { 
+        // Refresh display
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Goal: ");
@@ -205,29 +209,31 @@ void loop()
       if (level == 1)
       {
         goalPoints = lvl2points;
-        levelTime -= 15;
+        levelTime += 30;
       }
       else if (level == 2)
       {
         goalPoints = lvl3points;
-        levelTime -= 15;
-      }
-      else if (levelTime >= 5)
-      {
-        goalPoints += 10;
-        levelTime -= 5;
+        levelTime += 20;
       }
       else
       {
         goalPoints += 10;
+        levelTime += 10;
       }
 
       currentPoints = goalPoints;
       level++;
-
-      // reset time?
-      elapsedTime = 0;
   
+      // Level up announcement
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print("LEVEL ");
+      lcd.print(level);
+      lcd.print("!!");
+      delay(2000);
+
+      // Refresh display
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Goal: ");
@@ -244,9 +250,13 @@ void loop()
     else  // Player loses, game over
     {
       lcd.clear();
-      lcd.print("You lose!");
+      lcd.setCursor(0, 0);
+      lcd.print("Game over!");
+      lcd.setCursor(0, 1);
+      lcd.print("Top LVL: ");
+      lcd.print(level);
       delay(5000);
-//
+
 //      // Player can reset game by holding down "reset" button until screen updates
 //      if (buttonResetVal == HIGH)
 //      {
