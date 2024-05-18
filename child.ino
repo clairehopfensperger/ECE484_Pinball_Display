@@ -125,6 +125,7 @@ void resetGame()
   lcd.print("!!");
   delay(2000);
 
+  lcd.clear()
   lcd.setCursor(0, 0);
   lcd.print("Goal: ");
   lcd.print(currentPoints);
@@ -256,12 +257,6 @@ void loop()
       lcd.print("Top LVL: ");
       lcd.print(level);
       delay(5000);
-
-//      // Player can reset game by holding down "reset" button until screen updates
-//      if (buttonResetVal == HIGH)
-//      {
-//        resetGame();
-//      }
     }
   }
 }
