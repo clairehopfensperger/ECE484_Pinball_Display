@@ -20,15 +20,11 @@
 const int sense1 = 2;
 const int sense2 = 3;
 const int sense3 = 4;
-const int sense4 = 5;  // bottom right
-const int sense5 = 6;  // bottom left
 
 //// Button vars (HIGH or LOW)
 int sense1Val = 0;
 int sense2Val = 0;
 int sense3Val = 0;
-int sense4Val = 0;
-int sense5Val = 0;
 
 // SPI Parent vars
 byte ParentReceive = 0;
@@ -79,8 +75,6 @@ void setup()
   pinMode(sense1, INPUT);
   pinMode(sense2, INPUT);
   pinMode(sense3, INPUT);
-  pinMode(sense4, INPUT);
-  pinMode(sense5, INPUT);
 
   // Attach servo
   myservo.attach(9);  // attaches the servo on pin 9 to the servo object
@@ -104,8 +98,6 @@ void loop()
   sense1Val = digitalRead(sense1);
   sense2Val = digitalRead(sense2);
   sense3Val = digitalRead(sense3);
-  sense4Val = digitalRead(sense4);
-  sense5Val = digitalRead(sense5);
 
   // read status of photoresistor
   photoVal = analogRead(photoRes);
@@ -129,12 +121,6 @@ void loop()
     //Serial.println(points);
     delay(200);
   }
-//  else if (sense4Val == LOW) // || sense5Val == LOW)
-//  {
-//    points = points0;
-//    //Serial.println(points);
-//    delay(200);
-//  }
   else if (photoVal < 130) {
     points = pointsPhoto;
     digitalWrite(ledPin, HIGH);
@@ -192,15 +178,4 @@ void loop()
     myservo.write(pos);
     delay(15);
   }
-
-//  Serial.println(pos);
-//  Serial.println();
-
-  //delay(200);
-//
-//  for (pos = 0; pos <= 180; pos += 3 ) { // goes from 0 degrees 180 degrees
-//    // in steps of 1 degree
-//    myservo.write(pos);              // tell servo to go to position in variable 'pos'
-//    delay(15);                       // waits 15ms for the servo to reach the position
-//  }
 }
